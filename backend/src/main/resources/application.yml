@@ -8,18 +8,18 @@ spring:
     console.enabled: true
   sql:
     init:
-      mode: always
+      mode: never
   jpa:
     defer-datasource-initialization: true
     hibernate:
       ddl-auto: create-drop
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
 
 jwt:
-  secret: aVerySecretKeyThatShouldBeLongEnoughForHS512AlgorithmOrYouWillGetAnError1234567890!@#$%^&*()
+  secret: YVZlcnlTZWNyZXRLZXlUaGF0U2hvdWxkQmVMb25nRW5vdWdoRm9ySFM1MTJBbGdvcml0aG1PcllvdVdpbGxHZXRBbkVycm9yMTIzNDU2Nzg5MEFiY2RlZmdoaWpsbW5vcHFyc3R1dnd4eXoxMjM0NTY3ODkw
   expirationMs: 86400000
 
 springdoc:

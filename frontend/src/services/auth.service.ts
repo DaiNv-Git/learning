@@ -1,38 +1,52 @@
 import axios from 'axios';
+import type { CurrentUser, Role } from '../types';
 
-const API_URL = 'http://localhost:8080/api/auth/';
+export const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api',
+});
+
+api.interceptors.request.use((config) => {
+  const user = authService.getCurrentUser();
+  if (user?.token) {
+    config.headers.Authorization = `Bearer ${user.token}`;
+  }
+  return config;
+});
 
 class AuthService {
-  login(username: string, password: string) {
-    return axios
-      .post(API_URL + 'login', { username, password })
-      .then((response) => {
-        if (response.data.token) {
-          localStorage.setItem('user', JSON.stringify(response.data));
-        }
-        return response.data;
-      });
+  async login(username: string, password: string) {
+    const response = await api.post<CurrentUser>('/auth/login', { username, password });
+    localStorage.setItem('user', JSON.stringify(response.data));
+    return response.data;
   }
 
   logout() {
     localStorage.removeItem('user');
   }
 
-  register(username: string, email: string, password: string, fullName: string, role: string) {
-    return axios.post(API_URL + 'register', {
-      username,
-      email,
-      password,
-      fullName,
-      role,
-    });
+  async register(username: string, email: string, password: string, fullName: string, role: Role = 'USER') {
+    return api.post('/auth/register', { username, email, password, fullName, role });
   }
 
-  getCurrentUser() {
+  getCurrentUser(): CurrentUser | null {
     const userStr = localStorage.getItem('user');
-    if (userStr) return JSON.parse(userStr);
-    return null;
+    if (!userStr) return null;
+    try {
+      return JSON.parse(userStr);
+    } catch {
+      localStorage.removeItem('user');
+      return null;
+    }
+  }
+
+  isAuthenticated() {
+    return Boolean(this.getCurrentUser()?.token);
+  }
+
+  isAdmin() {
+    return this.getCurrentUser()?.role === 'ADMIN';
   }
 }
 
-export default new AuthService();
+const authService = new AuthService();
+export default authService;

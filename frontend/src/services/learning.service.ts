@@ -1,59 +1,86 @@
-import axios from 'axios';
-import authService from './auth.service';
-
-const API_URL = 'http://localhost:8080/api/';
-
-const getAuthHeader = () => {
-  const user = authService.getCurrentUser();
-  if (user && user.token) {
-    return { Authorization: 'Bearer ' + user.token };
-  }
-  return {};
-};
+import { api } from './auth.service';
+import type { AdminSummary, Course, DashboardStats, Deck, Flashcard, Quiz, QuizAttempt, Question, UserRow } from '../types';
 
 class LearningService {
-  // --- Flashcards ---
   getFlashcards(deckId: number) {
-    return axios.get(API_URL + 'flashcards/deck/' + deckId, { headers: getAuthHeader() });
+    return api.get<Flashcard[]>('/flashcards/deck/' + deckId);
   }
 
   submitFlashcardProgress(flashcardId: number, evaluation: string) {
-    const user = authService.getCurrentUser();
-    // In our simplified API we pass userId and flashcardId
-    return axios.post(API_URL + `flashcards/progress?userId=${user.id || 1}&flashcardId=${flashcardId}&evaluation=${evaluation}`, {}, { headers: getAuthHeader() });
+    return api.post<Flashcard>(`/flashcards/progress?flashcardId=${flashcardId}&evaluation=${evaluation}`);
   }
 
-  // --- Quizzes ---
   getQuizQuestions(quizId: number) {
-    return axios.get(API_URL + 'quizzes/' + quizId + '/questions', { headers: getAuthHeader() });
+    return api.get<Question[]>('/quizzes/' + quizId + '/questions');
   }
 
   submitQuiz(quizId: number, answers: Record<number, string>) {
-    const user = authService.getCurrentUser();
-    return axios.post(API_URL + 'quizzes/submit', {
+    return api.post<QuizAttempt>('/quizzes/submit', {
       quizId,
-      userId: user?.id || 1,
       answers
-    }, { headers: getAuthHeader() });
+    });
   }
 
-  // --- Profile & Courses ---
   getCourses() {
-    return axios.get(API_URL + 'courses', { headers: getAuthHeader() });
+    return api.get<Course[]>('/courses');
+  }
+
+  getDecks(courseId: number) {
+    return api.get<Deck[]>('/courses/' + courseId + '/decks');
+  }
+
+  getQuizzes(courseId?: number) {
+    const suffix = courseId ? `?courseId=${courseId}` : '';
+    return api.get<Quiz[]>('/quizzes' + suffix);
   }
 
   getQuizAttempts() {
-    const user = authService.getCurrentUser();
-    return axios.get(API_URL + 'quizzes/attempts/' + (user?.id || 1), { headers: getAuthHeader() });
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return api.get<QuizAttempt[]>('/quizzes/attempts/' + (user?.id || 0));
   }
 
-  // --- Admin ---
-  createCourse(course: any) {
-    return axios.post(API_URL + 'courses', course, { headers: getAuthHeader() });
+  getDashboardStats() {
+    return api.get<DashboardStats>('/statistics');
+  }
+
+  createCourse(course: { title: string; description: string }) {
+    return api.post<Course>('/courses', course);
   }
 
   deleteCourse(id: number) {
-    return axios.delete(API_URL + 'courses/' + id, { headers: getAuthHeader() });
+    return api.delete('/courses/' + id);
+  }
+
+  updateCourse(id: number, course: { title: string; description: string }) {
+    return api.put<Course>('/courses/' + id, course);
+  }
+
+  createDeck(deck: { courseId: number; title: string; description: string }) {
+    return api.post<Deck>('/decks', deck);
+  }
+
+  createFlashcard(card: { deckId: number; frontText: string; backText: string; difficultyLevel: string }) {
+    return api.post<Flashcard>('/flashcards', card);
+  }
+
+  deleteFlashcard(id: number) {
+    return api.delete('/flashcards/' + id);
+  }
+
+  createQuiz(quiz: any) {
+    return api.post<Quiz>('/quizzes', quiz);
+  }
+
+  getAdminSummary() {
+    return api.get<AdminSummary>('/admin/summary');
+  }
+
+  getUsers() {
+    return api.get<UserRow[]>('/admin/users');
+  }
+
+  deleteUser(id: number) {
+    return api.delete('/admin/users/' + id);
   }
 }
 
