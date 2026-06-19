@@ -6,6 +6,7 @@ import com.smartlearning.backend.model.User;
 import com.smartlearning.backend.repository.UserRepository;
 import com.smartlearning.backend.service.JwtService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -64,8 +65,11 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public UserResponse me(Principal principal) {
-        return mapper.user(currentUser(principal));
+    public ResponseEntity<?> me(Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized");
+        }
+        return ResponseEntity.ok(mapper.user(currentUser(principal)));
     }
 
     private User currentUser(Principal principal) {
