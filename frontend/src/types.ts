@@ -30,6 +30,17 @@ export interface Deck {
   flashcardCount: number;
 }
 
+export interface CourseResource {
+  id: number;
+  courseId: number;
+  courseTitle: string;
+  title: string;
+  url: string;
+  type: string;
+  description: string;
+  createdAt: string;
+}
+
 export interface Flashcard {
   id: number;
   deckId: number;
@@ -86,6 +97,8 @@ export interface AdminSummary {
   flashcards: number;
   quizzes: number;
   attempts: number;
+  resources: number;
+  announcements: number;
 }
 
 export interface UserRow {
@@ -94,5 +107,15 @@ export interface UserRow {
   email: string;
   fullName: string;
   role: Role;
+  createdAt: string;
+}
+
+export interface Announcement {
+  id: number;
+  title: string;
+  content: string;
+  audience: string;
+  active: boolean;
+  createdBy: string;
   createdAt: string;
 }

@@ -22,12 +22,14 @@ public class LearningController {
     private final QuizRepository quizzes;
     private final QuestionRepository questions;
     private final QuizAttemptRepository attempts;
+    private final CourseResourceRepository resources;
+    private final AnnouncementRepository announcements;
     private final MapperSupport mapper;
 
     public LearningController(UserRepository users, CourseRepository courses, FlashcardDeckRepository decks,
                               FlashcardRepository flashcards, UserFlashcardProgressRepository progress,
                               QuizRepository quizzes, QuestionRepository questions, QuizAttemptRepository attempts,
-                              MapperSupport mapper) {
+                              CourseResourceRepository resources, AnnouncementRepository announcements, MapperSupport mapper) {
         this.users = users;
         this.courses = courses;
         this.decks = decks;
@@ -36,6 +38,8 @@ public class LearningController {
         this.quizzes = quizzes;
         this.questions = questions;
         this.attempts = attempts;
+        this.resources = resources;
+        this.announcements = announcements;
         this.mapper = mapper;
     }
 
@@ -77,6 +81,43 @@ public class LearningController {
     @GetMapping("/courses/{courseId}/decks")
     public List<DeckResponse> decks(@PathVariable Long courseId) {
         return decks.findByCourseId(courseId).stream().map(mapper::deck).toList();
+    }
+
+    @GetMapping("/courses/{courseId}/resources")
+    public List<CourseResourceResponse> courseResources(@PathVariable Long courseId) {
+        return resources.findByCourseIdOrderByCreatedAtDesc(courseId).stream().map(mapper::resource).toList();
+    }
+
+    @PostMapping("/resources")
+    @PreAuthorize("hasRole('ADMIN')")
+    public CourseResourceResponse createResource(@Valid @RequestBody CourseResourceRequest request) {
+        CourseResource resource = resources.save(new CourseResource(
+                courseEntity(request.courseId()),
+                request.title(),
+                request.url(),
+                normalizeResourceType(request.type()),
+                request.description()
+        ));
+        return mapper.resource(resource);
+    }
+
+    @PutMapping("/resources/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public CourseResourceResponse updateResource(@PathVariable Long id, @Valid @RequestBody CourseResourceRequest request) {
+        CourseResource resource = resources.findById(id).orElseThrow();
+        resource.course = courseEntity(request.courseId());
+        resource.title = request.title();
+        resource.url = request.url();
+        resource.type = normalizeResourceType(request.type());
+        resource.description = request.description();
+        return mapper.resource(resources.save(resource));
+    }
+
+    @DeleteMapping("/resources/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteResource(@PathVariable Long id) {
+        resources.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/decks")
@@ -209,11 +250,61 @@ public class LearningController {
         );
     }
 
+    @GetMapping("/announcements")
+    public List<AnnouncementResponse> activeAnnouncements() {
+        return announcements.findByActiveTrueOrderByCreatedAtDesc().stream().map(mapper::announcement).toList();
+    }
+
+    @PostMapping("/announcements")
+    @PreAuthorize("hasRole('ADMIN')")
+    public AnnouncementResponse createAnnouncement(@Valid @RequestBody AnnouncementRequest request, Principal principal) {
+        Announcement announcement = announcements.save(new Announcement(
+                request.title(),
+                request.content(),
+                normalizeAudience(request.audience()),
+                request.active(),
+                currentUser(principal)
+        ));
+        return mapper.announcement(announcement);
+    }
+
+    @PutMapping("/announcements/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public AnnouncementResponse updateAnnouncement(@PathVariable Long id, @Valid @RequestBody AnnouncementRequest request) {
+        Announcement announcement = announcements.findById(id).orElseThrow();
+        announcement.title = request.title();
+        announcement.content = request.content();
+        announcement.audience = normalizeAudience(request.audience());
+        announcement.active = request.active();
+        return mapper.announcement(announcements.save(announcement));
+    }
+
+    @DeleteMapping("/announcements/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteAnnouncement(@PathVariable Long id) {
+        announcements.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
     private User currentUser(Principal principal) {
         return users.findByUsername(principal.getName()).orElseThrow();
     }
 
     private Course courseEntity(Long id) {
         return courses.findById(id).orElseThrow();
+    }
+
+    private String normalizeResourceType(String type) {
+        if (type == null || type.isBlank()) {
+            return "LINK";
+        }
+        return type.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private String normalizeAudience(String audience) {
+        if (audience == null || audience.isBlank()) {
+            return "ALL";
+        }
+        return audience.trim().toUpperCase(Locale.ROOT);
     }
 }

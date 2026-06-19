@@ -44,6 +44,19 @@ class MapperSupport {
         return new DeckResponse(deck.id, deck.course.id, deck.title, deck.description, flashcards.findByDeckId(deck.id).size());
     }
 
+    CourseResourceResponse resource(CourseResource resource) {
+        return new CourseResourceResponse(
+                resource.id,
+                resource.course.id,
+                resource.course.title,
+                resource.title,
+                resource.url,
+                resource.type,
+                resource.description,
+                resource.createdAt
+        );
+    }
+
     FlashcardResponse flashcard(Flashcard card, UserFlashcardProgress progress) {
         return new FlashcardResponse(
                 card.id,
@@ -66,5 +79,17 @@ class MapperSupport {
 
     QuizAttemptResponse attempt(QuizAttempt attempt) {
         return new QuizAttemptResponse(attempt.id, quiz(attempt.quiz), attempt.score, attempt.totalQuestions, attempt.correctAnswers, attempt.completedAt);
+    }
+
+    AnnouncementResponse announcement(Announcement announcement) {
+        return new AnnouncementResponse(
+                announcement.id,
+                announcement.title,
+                announcement.content,
+                announcement.audience,
+                announcement.active,
+                announcement.createdBy == null ? "System" : announcement.createdBy.fullName,
+                announcement.createdAt
+        );
     }
 }

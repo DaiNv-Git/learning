@@ -14,10 +14,13 @@ public class DataSeeder implements CommandLineRunner {
     private final FlashcardRepository flashcards;
     private final QuizRepository quizzes;
     private final QuestionRepository questions;
+    private final CourseResourceRepository resources;
+    private final AnnouncementRepository announcements;
     private final PasswordEncoder encoder;
 
     public DataSeeder(UserRepository users, CourseRepository courses, FlashcardDeckRepository decks,
                       FlashcardRepository flashcards, QuizRepository quizzes, QuestionRepository questions,
+                      CourseResourceRepository resources, AnnouncementRepository announcements,
                       PasswordEncoder encoder) {
         this.users = users;
         this.courses = courses;
@@ -25,6 +28,8 @@ public class DataSeeder implements CommandLineRunner {
         this.flashcards = flashcards;
         this.quizzes = quizzes;
         this.questions = questions;
+        this.resources = resources;
+        this.announcements = announcements;
         this.encoder = encoder;
     }
 
@@ -73,6 +78,14 @@ public class DataSeeder implements CommandLineRunner {
         addQuestion(reactQuiz, "Hook nào dùng để quản lý state?", "useEffect", "useState", "useMemo", "useRef", "B", "useState khai báo và cập nhật state.");
         addQuestion(reactQuiz, "Thư viện nào dùng để điều hướng SPA?", "Axios", "React Router", "Hibernate", "BCrypt", "B", "React Router quản lý route trong React.");
         addQuestion(reactQuiz, "Axios chủ yếu dùng để làm gì?", "Gọi API", "Tạo database", "Mã hóa password", "Build Docker image", "A", "Axios là HTTP client.");
+
+        resources.save(new CourseResource(java, "Spring Boot Reference", "https://docs.spring.io/spring-boot/index.html", "DOC", "Tài liệu chính thức để tra cứu cấu hình, REST API và security."));
+        resources.save(new CourseResource(java, "JWT Debugger", "https://jwt.io/", "TOOL", "Công cụ kiểm tra cấu trúc token JWT khi học xác thực."));
+        resources.save(new CourseResource(react, "React Documentation", "https://react.dev/learn", "DOC", "Tài liệu học React hiện đại theo component và hook."));
+        resources.save(new CourseResource(db, "MySQL Documentation", "https://dev.mysql.com/doc/", "DOC", "Tài liệu tham khảo cú pháp SQL và tối ưu truy vấn."));
+
+        announcements.save(new Announcement("Lịch ôn tập tuần này", "Hoàn thành ít nhất 10 flashcard Spring Boot và 1 bài quiz trước cuối tuần.", "ALL", true, admin));
+        announcements.save(new Announcement("Gợi ý học hiệu quả", "Khi gặp thẻ khó, hãy chọn mức Khó để hệ thống đưa thẻ vào trạng thái cần ôn lại.", "ALL", true, admin));
     }
 
     private void addCard(FlashcardDeck deck, String front, String back, DifficultyLevel difficulty) {

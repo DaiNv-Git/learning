@@ -21,6 +21,12 @@ public class LearningDtos {
     public record DeckResponse(Long id, Long courseId, String title, String description, int flashcardCount) {
     }
 
+    public record CourseResourceRequest(@NotNull Long courseId, @NotBlank String title, @NotBlank String url, String type, String description) {
+    }
+
+    public record CourseResourceResponse(Long id, Long courseId, String courseTitle, String title, String url, String type, String description, LocalDateTime createdAt) {
+    }
+
     public record FlashcardRequest(@NotNull Long deckId, @NotBlank String frontText, @NotBlank String backText, DifficultyLevel difficultyLevel) {
     }
 
@@ -48,6 +54,12 @@ public class LearningDtos {
     public record DashboardStats(long totalCourses, long totalDecks, long totalFlashcards, long studiedCards, long masteredCards, long quizAttempts, double averageScore, List<QuizAttemptResponse> recentAttempts) {
     }
 
-    public record AdminSummary(long users, long admins, long courses, long decks, long flashcards, long quizzes, long attempts) {
+    public record AnnouncementRequest(@NotBlank String title, @NotBlank String content, String audience, boolean active) {
+    }
+
+    public record AnnouncementResponse(Long id, String title, String content, String audience, boolean active, String createdBy, LocalDateTime createdAt) {
+    }
+
+    public record AdminSummary(long users, long admins, long courses, long decks, long flashcards, long quizzes, long attempts, long resources, long announcements) {
     }
 }

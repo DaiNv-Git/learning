@@ -1,5 +1,5 @@
 import { api } from './auth.service';
-import type { AdminSummary, Course, DashboardStats, Deck, Flashcard, Quiz, QuizAttempt, Question, UserRow } from '../types';
+import type { AdminSummary, Announcement, Course, CourseResource, DashboardStats, Deck, Flashcard, Quiz, QuizAttempt, Question, UserRow } from '../types';
 
 class LearningService {
   getFlashcards(deckId: number) {
@@ -27,6 +27,10 @@ class LearningService {
 
   getDecks(courseId: number) {
     return api.get<Deck[]>('/courses/' + courseId + '/decks');
+  }
+
+  getCourseResources(courseId: number) {
+    return api.get<CourseResource[]>('/courses/' + courseId + '/resources');
   }
 
   getQuizzes(courseId?: number) {
@@ -63,12 +67,48 @@ class LearningService {
     return api.post<Flashcard>('/flashcards', card);
   }
 
+  updateFlashcard(id: number, card: { deckId: number; frontText: string; backText: string; difficultyLevel: string }) {
+    return api.put<Flashcard>('/flashcards/' + id, card);
+  }
+
   deleteFlashcard(id: number) {
     return api.delete('/flashcards/' + id);
   }
 
   createQuiz(quiz: any) {
     return api.post<Quiz>('/quizzes', quiz);
+  }
+
+  getAnnouncements() {
+    return api.get<Announcement[]>('/announcements');
+  }
+
+  getAdminAnnouncements() {
+    return api.get<Announcement[]>('/admin/announcements');
+  }
+
+  createAnnouncement(announcement: { title: string; content: string; audience: string; active: boolean }) {
+    return api.post<Announcement>('/announcements', announcement);
+  }
+
+  updateAnnouncement(id: number, announcement: { title: string; content: string; audience: string; active: boolean }) {
+    return api.put<Announcement>('/announcements/' + id, announcement);
+  }
+
+  deleteAnnouncement(id: number) {
+    return api.delete('/announcements/' + id);
+  }
+
+  createResource(resource: { courseId: number; title: string; url: string; type: string; description: string }) {
+    return api.post<CourseResource>('/resources', resource);
+  }
+
+  updateResource(id: number, resource: { courseId: number; title: string; url: string; type: string; description: string }) {
+    return api.put<CourseResource>('/resources/' + id, resource);
+  }
+
+  deleteResource(id: number) {
+    return api.delete('/resources/' + id);
   }
 
   getAdminSummary() {

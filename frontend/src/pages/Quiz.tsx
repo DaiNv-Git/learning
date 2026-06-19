@@ -1,122 +1,289 @@
-import { useState, useEffect } from 'react';
-import { Box, Typography, Radio, RadioGroup, FormControlLabel, FormControl, Button, Card, CircularProgress } from '@mui/material';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  Chip,
+  CircularProgress,
+  FormControl,
+  FormControlLabel,
+  IconButton,
+  LinearProgress,
+  Radio,
+  RadioGroup,
+  Stack,
+  Typography,
+} from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import ReplayIcon from '@mui/icons-material/Replay';
+import TimerIcon from '@mui/icons-material/Timer';
 import { motion } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import LearningService from '../services/learning.service';
+import type { Question, Quiz as QuizMeta, QuizAttempt } from '../types';
+
+const MotionBox = motion.create(Box);
+
+function formatTime(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+  const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+  return `${minutes}:${seconds}`;
+}
 
 export default function Quiz() {
   const { quizId } = useParams();
   const navigate = useNavigate();
-  const [questions, setQuestions] = useState<any[]>([]);
+  const numericQuizId = Number(quizId || 1);
+  const [quiz, setQuiz] = useState<QuizMeta | null>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [secondsLeft, setSecondsLeft] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<QuizAttempt | null>(null);
+  const [warning, setWarning] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    LearningService.getQuizQuestions(1) // Demo hardcoded to quiz 1
-      .then(res => {
-        setQuestions(res.data);
-        setLoading(false);
-      })
-      .catch(err => console.error(err));
-  }, [quizId]);
+    let mounted = true;
+    async function loadQuiz() {
+      try {
+        setLoading(true);
+        setError('');
+        const [questionResponse, quizResponse] = await Promise.all([
+          LearningService.getQuizQuestions(numericQuizId),
+          LearningService.getQuizzes(),
+        ]);
+        if (!mounted) return;
+        const quizInfo = quizResponse.data.find((item) => item.id === numericQuizId) ?? null;
+        setQuiz(quizInfo);
+        setQuestions(questionResponse.data);
+        setAnswers({});
+        setCurrentIndex(0);
+        setResult(null);
+        setSecondsLeft((quizInfo?.timeLimitMinutes || 15) * 60);
+      } catch (err) {
+        console.error(err);
+        if (mounted) setError('Không tải được bài kiểm tra. Vui lòng kiểm tra đăng nhập hoặc backend.');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+    loadQuiz();
+    return () => {
+      mounted = false;
+    };
+  }, [numericQuizId]);
+
+  const answeredCount = useMemo(() => Object.keys(answers).length, [answers]);
+  const progress = questions.length ? (answeredCount / questions.length) * 100 : 0;
+  const currentQuestion = questions[currentIndex];
+
+  const submitQuiz = useCallback(
+    async (autoSubmit = false) => {
+      if (submitting || result || !questions.length) return;
+      if (!autoSubmit && answeredCount < questions.length) {
+        setWarning(`Bạn còn ${questions.length - answeredCount} câu chưa trả lời.`);
+        return;
+      }
+      try {
+        setWarning('');
+        setSubmitting(true);
+        const response = await LearningService.submitQuiz(numericQuizId, answers);
+        setResult(response.data);
+      } catch (err) {
+        console.error(err);
+        setError('Không nộp được bài kiểm tra. Vui lòng thử lại.');
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [answeredCount, answers, numericQuizId, questions.length, result, submitting]
+  );
+
+  useEffect(() => {
+    if (loading || result || submitting || !questions.length) return;
+    if (secondsLeft <= 0) {
+      submitQuiz(true);
+      return;
+    }
+    const timer = window.setInterval(() => {
+      setSecondsLeft((value) => Math.max(value - 1, 0));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [loading, questions.length, result, secondsLeft, submitQuiz, submitting]);
 
   const handleAnswerChange = (questionId: number, option: string) => {
-    setAnswers(prev => ({ ...prev, [questionId]: option }));
+    setWarning('');
+    setAnswers((prev) => ({ ...prev, [questionId]: option }));
   };
 
-  const handleSubmit = () => {
-    setSubmitting(true);
-    LearningService.submitQuiz(1, answers)
-      .then(res => {
-        setSubmitting(false);
-        setResult(res.data); // QuizAttempt object
-      })
-      .catch(err => {
-        console.error(err);
-        setSubmitting(false);
-      });
+  const restartQuiz = () => {
+    setAnswers({});
+    setCurrentIndex(0);
+    setResult(null);
+    setWarning('');
+    setSecondsLeft((quiz?.timeLimitMinutes || 15) * 60);
   };
 
-  if (loading) return (
-    <Box sx={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center', background: 'transparent' }}>
-      <CircularProgress color="secondary" size={60} thickness={4} sx={{ filter: 'drop-shadow(0 0 10px rgba(0,229,255,0.8))' }} />
-    </Box>
-  );
+  if (loading) {
+    return (
+      <Box sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
+        <Stack spacing={2} sx={{ alignItems: 'center' }}>
+          <CircularProgress color="secondary" />
+          <Typography color="text.secondary">Đang tải bài kiểm tra...</Typography>
+        </Stack>
+      </Box>
+    );
+  }
 
-  if (questions.length === 0) return (
-    <Box sx={{ p: 5, textAlign: 'center', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Typography variant="h5" color="text.secondary">No questions found.</Typography>
-    </Box>
-  );
+  if (error) {
+    return (
+      <Box sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center', p: 3 }}>
+        <Stack spacing={2} sx={{ width: '100%', maxWidth: 560 }}>
+          <Alert severity="error">{error}</Alert>
+          <Button variant="contained" onClick={() => navigate('/dashboard')}>Về dashboard</Button>
+        </Stack>
+      </Box>
+    );
+  }
+
+  if (!questions.length) {
+    return (
+      <Box sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center', p: 3 }}>
+        <Stack spacing={2} sx={{ alignItems: 'center', textAlign: 'center' }}>
+          <Typography variant="h5" sx={{ fontWeight: 800 }}>Bài kiểm tra chưa có câu hỏi</Typography>
+          <Typography color="text.secondary">Admin có thể thêm câu hỏi cho quiz này trong dữ liệu hệ thống.</Typography>
+          <Button variant="contained" onClick={() => navigate('/dashboard')}>Về dashboard</Button>
+        </Stack>
+      </Box>
+    );
+  }
 
   if (result) {
+    const percent = result.totalQuestions ? Math.round((result.score / result.totalQuestions) * 100) : 0;
     return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', p: 4 }}>
-        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ width: '100%', maxWidth: 600 }}>
-          <Card sx={{ p: 5, width: '100%', textAlign: 'center', border: '1px solid rgba(185,102,254,0.3)', boxShadow: '0 20px 40px rgba(185,102,254,0.1)' }}>
-            <Typography variant="h3" sx={{ fontWeight: 900, background: 'linear-gradient(135deg, #b966fe 0%, #00e5ff 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', mb: 2 }}>
-              Quiz Completed!
+      <Box sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center', p: { xs: 2, md: 4 } }}>
+        <MotionBox initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} sx={{ width: '100%', maxWidth: 620 }}>
+          <Card sx={{ p: { xs: 3, md: 5 }, borderRadius: 1, textAlign: 'center' }}>
+            <CheckCircleIcon sx={{ fontSize: 62, color: 'secondary.main', mb: 2 }} />
+            <Typography variant="h3" sx={{ fontWeight: 900 }}>Hoàn thành bài kiểm tra</Typography>
+            <Typography color="text.secondary" sx={{ mt: 1, mb: 4 }}>
+              {quiz?.title || 'Bài kiểm tra'} đã được lưu vào lịch sử học tập.
             </Typography>
-            <Typography variant="h5" color="text.secondary" sx={{ mb: 4 }}>
-              Your Score: <strong style={{ color: '#00e5ff', textShadow: '0 0 10px rgba(0,229,255,0.3)' }}>{result.score} / {result.totalQuestions}</strong>
-            </Typography>
-            <Button variant="contained" color="primary" size="large" onClick={() => navigate('/dashboard')} sx={{ borderRadius: '50px', px: 6 }}>
-              Return to Dashboard
-            </Button>
+            <Box sx={{ p: 3, borderRadius: 1, bgcolor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', mb: 3 }}>
+              <Typography variant="h2" sx={{ fontWeight: 900, color: 'secondary.main' }}>{percent}%</Typography>
+              <Typography color="text.secondary">
+                Đúng {result.score}/{result.totalQuestions} câu
+              </Typography>
+            </Box>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ justifyContent: 'center' }}>
+              <Button startIcon={<ReplayIcon />} variant="outlined" onClick={restartQuiz} sx={{ borderRadius: 1 }}>
+                Làm lại
+              </Button>
+              <Button variant="contained" color="secondary" onClick={() => navigate('/dashboard')} sx={{ borderRadius: 1 }}>
+                Về dashboard
+              </Button>
+            </Stack>
           </Card>
-        </motion.div>
+        </MotionBox>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', p: 4 }}>
-      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ width: '100%', maxWidth: 800 }}>
-        <Card sx={{ p: 5, width: '100%', border: '1px solid rgba(255,255,255,0.05)' }}>
-          <Typography variant="h3" sx={{ fontWeight: 900, background: 'linear-gradient(135deg, #b966fe 0%, #00e5ff 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block', mb: 1 }}>
-            Java Quick Test
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 5 }}>Answer all questions below to complete the test.</Typography>
-          
-          {questions.map((q, index) => (
-            <Box key={q.id} sx={{ mb: 5, borderBottom: index < questions.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none', pb: index < questions.length - 1 ? 4 : 0 }}>
-              <Typography variant="h6" color="text.primary" sx={{ fontWeight: 700, mb: 3 }}>
-                {index + 1}. {q.questionText}
+    <Box sx={{ minHeight: '100vh', p: { xs: 2, md: 4 }, display: 'grid', placeItems: 'center' }}>
+      <IconButton
+        onClick={() => navigate('/dashboard')}
+        sx={{
+          position: 'fixed',
+          top: { xs: 18, md: 28 },
+          left: { xs: 18, md: 28 },
+          color: 'text.primary',
+          bgcolor: 'rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255,255,255,0.12)',
+        }}
+      >
+        <ArrowBackIcon />
+      </IconButton>
+
+      <MotionBox initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} sx={{ width: '100%', maxWidth: 860 }}>
+        <Card sx={{ p: { xs: 2.5, md: 4 }, borderRadius: 1 }}>
+          <Stack spacing={3}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+              <Box>
+                <Typography variant="h3" sx={{ fontWeight: 900 }}>
+                  {quiz?.title || 'Bài kiểm tra'}
+                </Typography>
+                <Typography color="text.secondary" sx={{ mt: 0.75 }}>
+                  Câu {currentIndex + 1}/{questions.length} · Đã trả lời {answeredCount}/{questions.length}
+                </Typography>
+              </Box>
+              <Chip
+                icon={<TimerIcon />}
+                label={formatTime(secondsLeft)}
+                color={secondsLeft <= 60 ? 'error' : 'secondary'}
+                sx={{ fontWeight: 800, minWidth: 112, justifyContent: 'center' }}
+              />
+            </Box>
+
+            <LinearProgress
+              variant="determinate"
+              value={progress}
+              sx={{ height: 8, borderRadius: 999, bgcolor: 'rgba(255,255,255,0.08)' }}
+            />
+
+            {warning && <Alert severity="warning">{warning}</Alert>}
+
+            <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+              {questions.map((question, index) => (
+                <Button
+                  key={question.id}
+                  size="small"
+                  variant={index === currentIndex ? 'contained' : answers[question.id] ? 'outlined' : 'text'}
+                  color={answers[question.id] ? 'secondary' : 'primary'}
+                  onClick={() => setCurrentIndex(index)}
+                  sx={{ minWidth: 42, borderRadius: 1 }}
+                >
+                  {index + 1}
+                </Button>
+              ))}
+            </Stack>
+
+            <Box sx={{ p: { xs: 2, md: 3 }, borderRadius: 1, border: '1px solid rgba(255,255,255,0.08)', bgcolor: 'rgba(255,255,255,0.025)' }}>
+              <Typography variant="h5" sx={{ fontWeight: 900, mb: 3 }}>
+                {currentIndex + 1}. {currentQuestion.questionText}
               </Typography>
               <FormControl component="fieldset" sx={{ width: '100%' }}>
-                <RadioGroup 
-                  value={answers[q.id] || ''} 
-                  onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                  sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+                <RadioGroup
+                  value={answers[currentQuestion.id] || ''}
+                  onChange={(event) => handleAnswerChange(currentQuestion.id, event.target.value)}
+                  sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}
                 >
                   {[
-                    { val: 'A', text: q.optiona },
-                    { val: 'B', text: q.optionb },
-                    { val: 'C', text: q.optionc },
-                    { val: 'D', text: q.optiond },
-                  ].map((opt) => {
-                    const isSelected = answers[q.id] === opt.val;
+                    { value: 'A', text: currentQuestion.optiona },
+                    { value: 'B', text: currentQuestion.optionb },
+                    { value: 'C', text: currentQuestion.optionc },
+                    { value: 'D', text: currentQuestion.optiond },
+                  ].map((option) => {
+                    const selected = answers[currentQuestion.id] === option.value;
                     return (
                       <FormControlLabel
-                        key={opt.val}
-                        value={opt.val}
-                        control={<Radio sx={{ color: 'rgba(255,255,255,0.3)', '&.Mui-checked': { color: '#00e5ff' } }} />}
-                        label={opt.text}
+                        key={option.value}
+                        value={option.value}
+                        control={<Radio sx={{ color: 'rgba(255,255,255,0.36)', '&.Mui-checked': { color: 'secondary.main' } }} />}
+                        label={`${option.value}. ${option.text}`}
                         sx={{
                           m: 0,
-                          p: 2,
-                          borderRadius: '16px',
-                          border: isSelected ? '1.5px solid rgba(0,229,255,0.5)' : '1px solid rgba(255,255,255,0.08)',
-                          background: isSelected ? 'rgba(0,229,255,0.05)' : 'rgba(255,255,255,0.01)',
-                          backdropFilter: 'blur(10px)',
-                          transition: 'all 0.2s ease',
-                          '&:hover': {
-                            background: isSelected ? 'rgba(0,229,255,0.08)' : 'rgba(255,255,255,0.04)',
-                            borderColor: isSelected ? '#00e5ff' : 'rgba(255,255,255,0.2)',
-                            transform: 'translateX(6px)'
-                          }
+                          p: 1.5,
+                          borderRadius: 1,
+                          border: selected ? '1px solid rgba(34,211,238,0.72)' : '1px solid rgba(255,255,255,0.08)',
+                          bgcolor: selected ? 'rgba(34,211,238,0.08)' : 'rgba(255,255,255,0.02)',
                         }}
                       />
                     );
@@ -124,22 +291,36 @@ export default function Quiz() {
                 </RadioGroup>
               </FormControl>
             </Box>
-          ))}
-          
-          <Box sx={{ mt: 5, display: 'flex', justifyContent: 'flex-end' }}>
-            <Button 
-              variant="contained" 
-              color="secondary" 
-              size="large" 
-              onClick={handleSubmit} 
-              disabled={submitting}
-              sx={{ borderRadius: '50px', px: 5, fontWeight: 'bold' }}
-            >
-              {submitting ? 'Submitting...' : 'Submit Quiz'}
-            </Button>
-          </Box>
+
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ justifyContent: 'space-between' }}>
+              <Button
+                startIcon={<NavigateBeforeIcon />}
+                variant="outlined"
+                disabled={currentIndex === 0}
+                onClick={() => setCurrentIndex((index) => Math.max(index - 1, 0))}
+                sx={{ borderRadius: 1 }}
+              >
+                Câu trước
+              </Button>
+              {currentIndex < questions.length - 1 ? (
+                <Button
+                  endIcon={<NavigateNextIcon />}
+                  variant="contained"
+                  color="secondary"
+                  onClick={() => setCurrentIndex((index) => Math.min(index + 1, questions.length - 1))}
+                  sx={{ borderRadius: 1 }}
+                >
+                  Câu tiếp
+                </Button>
+              ) : (
+                <Button variant="contained" color="secondary" disabled={submitting} onClick={() => submitQuiz(false)} sx={{ borderRadius: 1 }}>
+                  {submitting ? 'Đang nộp...' : 'Nộp bài'}
+                </Button>
+              )}
+            </Stack>
+          </Stack>
         </Card>
-      </motion.div>
+      </MotionBox>
     </Box>
   );
 }

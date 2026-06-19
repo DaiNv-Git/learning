@@ -1,22 +1,37 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, Grid, Card, CardContent, CardMedia, Button, Skeleton } from '@mui/material';
+import { Box, Typography, Grid, Card, CardContent, CardMedia, Button, Skeleton, Chip, Stack } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import LinkIcon from '@mui/icons-material/Link';
 import DashboardLayout from '../layouts/DashboardLayout';
 import LearningService from '../services/learning.service';
+import type { Course, CourseResource } from '../types';
 
 export default function Courses() {
   const navigate = useNavigate();
-  const [courses, setCourses] = useState<any[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [resourcesByCourse, setResourcesByCourse] = useState<Record<number, CourseResource[]>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    LearningService.getCourses()
-      .then(res => {
+    async function loadCourses() {
+      try {
+        const res = await LearningService.getCourses();
         setCourses(res.data);
+        const resourceEntries = await Promise.all(
+          res.data.map(async (course) => {
+            const resourceResponse = await LearningService.getCourseResources(course.id);
+            return [course.id, resourceResponse.data] as const;
+          })
+        );
+        setResourcesByCourse(Object.fromEntries(resourceEntries));
+      } catch (err) {
+        console.error(err);
+      } finally {
         setLoading(false);
-      })
-      .catch(err => console.error(err));
+      }
+    }
+    loadCourses();
   }, []);
 
   return (
@@ -74,6 +89,35 @@ export default function Courses() {
                       <Typography color="text.secondary" variant="body2" sx={{ lineBreak: 'anywhere' }}>
                         {course.description}
                       </Typography>
+                      <Stack spacing={1} sx={{ mt: 2 }}>
+                        {(resourcesByCourse[course.id] || []).slice(0, 2).map((resource) => (
+                          <Box
+                            key={resource.id}
+                            component="a"
+                            href={resource.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 1,
+                              color: 'text.secondary',
+                              textDecoration: 'none',
+                              border: '1px solid rgba(255,255,255,0.08)',
+                              borderRadius: 1,
+                              px: 1.25,
+                              py: 0.85,
+                              '&:hover': { color: 'secondary.main', borderColor: 'rgba(0,229,255,0.32)' },
+                            }}
+                          >
+                            <LinkIcon fontSize="small" />
+                            <Typography variant="body2" sx={{ fontWeight: 700, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {resource.title}
+                            </Typography>
+                            <Chip size="small" label={resource.type} />
+                          </Box>
+                        ))}
+                      </Stack>
                     </CardContent>
                     <Box sx={{ p: 3, pt: 0 }}>
                       <Button 
