@@ -122,6 +122,14 @@ class LearningService {
   deleteUser(id: number) {
     return api.delete('/admin/users/' + id);
   }
+
+  updateUserRole(id: number, role: string) {
+    return api.put('/admin/users/' + id + '/role', { role });
+  }
+
+  pushNotificationToAll(message: string) {
+    return api.post('/notifications/admin/push/all', { message });
+  }
 }
 
 export default new LearningService();

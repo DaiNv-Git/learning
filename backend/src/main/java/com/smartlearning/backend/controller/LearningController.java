@@ -3,6 +3,10 @@ package com.smartlearning.backend.controller;
 import com.smartlearning.backend.dto.LearningDtos.*;
 import com.smartlearning.backend.model.*;
 import com.smartlearning.backend.repository.*;
+import com.smartlearning.backend.model.Notification;
+import com.smartlearning.backend.repository.NotificationRepository;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,12 +28,15 @@ public class LearningController {
     private final QuizAttemptRepository attempts;
     private final CourseResourceRepository resources;
     private final AnnouncementRepository announcements;
+    private final NotificationRepository notifications;
+    private final SimpMessagingTemplate messagingTemplate;
     private final MapperSupport mapper;
 
     public LearningController(UserRepository users, CourseRepository courses, FlashcardDeckRepository decks,
                               FlashcardRepository flashcards, UserFlashcardProgressRepository progress,
                               QuizRepository quizzes, QuestionRepository questions, QuizAttemptRepository attempts,
-                              CourseResourceRepository resources, AnnouncementRepository announcements, MapperSupport mapper) {
+                              CourseResourceRepository resources, AnnouncementRepository announcements, MapperSupport mapper,
+                              NotificationRepository notifications, SimpMessagingTemplate messagingTemplate) {
         this.users = users;
         this.courses = courses;
         this.decks = decks;
@@ -40,6 +47,8 @@ public class LearningController {
         this.attempts = attempts;
         this.resources = resources;
         this.announcements = announcements;
+        this.notifications = notifications;
+        this.messagingTemplate = messagingTemplate;
         this.mapper = mapper;
     }
 
@@ -59,6 +68,28 @@ public class LearningController {
         Course course = courses.save(new Course(request.title(), request.description(), currentUser(principal)));
         FlashcardDeck deck = decks.save(new FlashcardDeck(course, request.title() + " Deck", "Bộ thẻ mặc định cho " + request.title()));
         flashcards.save(new Flashcard(deck, "Ví dụ khái niệm đầu tiên", "Nội dung giải thích mẫu. Admin có thể chỉnh sửa thẻ này.", DifficultyLevel.EASY));
+        
+        // Notify all users
+        new Thread(() -> {
+            List<User> allUsers = users.findAll();
+            List<Notification> notificationsList = new java.util.ArrayList<>();
+            for (User u : allUsers) {
+                notificationsList.add(Notification.builder()
+                        .user(u)
+                        .message("Khóa học mới đã được thêm: " + course.title)
+                        .isRead(false)
+                        .build());
+            }
+            notificationsList = notifications.saveAll(notificationsList);
+            for (Notification notification : notificationsList) {
+                messagingTemplate.convertAndSendToUser(
+                        notification.getUser().username,
+                        "/queue/notifications",
+                        java.util.Map.of("id", notification.getId(), "message", notification.getMessage(), "isRead", false)
+                );
+            }
+        }).start();
+        
         return mapper.course(course);
     }
 

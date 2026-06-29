@@ -67,4 +67,19 @@ public class AdminController {
     public void deleteUser(@PathVariable Long id) {
         users.deleteById(id);
     }
+
+    @PutMapping("/users/{id}/role")
+    public void updateUserRole(@PathVariable Long id, @RequestBody java.util.Map<String, String> payload) {
+        String newRoleStr = payload.get("role");
+        if (newRoleStr == null) return;
+        
+        users.findById(id).ifPresent(user -> {
+            try {
+                user.role = Role.valueOf(newRoleStr);
+                users.save(user);
+            } catch (IllegalArgumentException e) {
+                // Invalid role
+            }
+        });
+    }
 }

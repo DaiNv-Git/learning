@@ -1,11 +1,11 @@
-package com.smartlearning.backend.presentation.controller;
+package com.smartlearning.backend.controller;
 
-import com.smartlearning.backend.core.entity.Course;
-import com.smartlearning.backend.core.entity.CourseDiscussion;
-import com.smartlearning.backend.core.entity.User;
-import com.smartlearning.backend.core.repository.CourseDiscussionRepository;
-import com.smartlearning.backend.core.repository.CourseRepository;
-import com.smartlearning.backend.core.repository.UserRepository;
+import com.smartlearning.backend.model.Course;
+import com.smartlearning.backend.model.CourseDiscussion;
+import com.smartlearning.backend.model.User;
+import com.smartlearning.backend.repository.CourseDiscussionRepository;
+import com.smartlearning.backend.repository.CourseRepository;
+import com.smartlearning.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,12 +35,12 @@ public class CourseDiscussionController {
         List<Map<String, Object>> response = discussions.stream().map(d -> {
             Map<String, Object> map = new java.util.HashMap<>();
             map.put("id", d.getId());
-            map.put("courseId", d.getCourse().getId());
+            map.put("courseId", d.getCourse().id);
             
             Map<String, Object> userMap = new java.util.HashMap<>();
-            userMap.put("id", d.getUser().getId());
-            userMap.put("fullName", d.getUser().getFullName());
-            userMap.put("username", d.getUser().getUsername());
+            userMap.put("id", d.getUser().id);
+            userMap.put("fullName", d.getUser().fullName);
+            userMap.put("username", d.getUser().username);
             
             map.put("user", userMap);
             map.put("content", d.getContent());
@@ -71,12 +71,12 @@ public class CourseDiscussionController {
 
         Map<String, Object> responseMap = new java.util.HashMap<>();
         responseMap.put("id", discussion.getId());
-        responseMap.put("courseId", discussion.getCourse().getId());
+        responseMap.put("courseId", discussion.getCourse().id);
         
         Map<String, Object> userMap = new java.util.HashMap<>();
-        userMap.put("id", discussion.getUser().getId());
-        userMap.put("fullName", discussion.getUser().getFullName());
-        userMap.put("username", discussion.getUser().getUsername());
+        userMap.put("id", discussion.getUser().id);
+        userMap.put("fullName", discussion.getUser().fullName);
+        userMap.put("username", discussion.getUser().username);
         
         responseMap.put("user", userMap);
         responseMap.put("content", discussion.getContent());

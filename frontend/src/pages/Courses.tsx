@@ -120,14 +120,24 @@ export default function Courses() {
                       </Stack>
                     </CardContent>
                     <Box sx={{ p: 3, pt: 0 }}>
-                      <Button 
-                        variant="contained" 
-                        color={idx % 2 === 0 ? 'primary' : 'secondary'} 
-                        fullWidth 
-                        onClick={() => navigate(`/study/${course.id}`)}
-                      >
-                        Start Learning
-                      </Button>
+                      <Stack direction="row" spacing={2}>
+                        <Button 
+                          variant="outlined" 
+                          color="info" 
+                          fullWidth 
+                          onClick={() => navigate(`/courses/${course.id}`)}
+                        >
+                          Details & Q&A
+                        </Button>
+                        <Button 
+                          variant="contained" 
+                          color={idx % 2 === 0 ? 'primary' : 'secondary'} 
+                          fullWidth 
+                          onClick={() => navigate(`/study/${course.id}`)}
+                        >
+                          Start Learning
+                        </Button>
+                      </Stack>
                     </Box>
                   </Card>
                 </motion.div>

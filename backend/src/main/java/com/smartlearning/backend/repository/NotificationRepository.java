@@ -1,6 +1,6 @@
-package com.smartlearning.backend.core.repository;
+package com.smartlearning.backend.repository;
 
-import com.smartlearning.backend.core.entity.Notification;
+import com.smartlearning.backend.model.Notification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

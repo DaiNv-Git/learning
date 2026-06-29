@@ -34,6 +34,8 @@ import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import QuizIcon from '@mui/icons-material/Quiz';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import StyleIcon from '@mui/icons-material/Style';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../layouts/DashboardLayout';
@@ -72,6 +74,7 @@ export default function AdminPanel() {
   const [deckForm, setDeckForm] = useState(emptyDeck);
   const [cardForm, setCardForm] = useState(emptyCard);
   const [editingCard, setEditingCard] = useState<Flashcard | null>(null);
+  const [broadcastMessage, setBroadcastMessage] = useState('');
 
   useEffect(() => {
     if (currentUser?.role !== 'ADMIN') {
@@ -291,6 +294,38 @@ export default function AdminPanel() {
     }
   };
 
+  const changeRole = async (user: UserRow) => {
+    if (user.id === currentUser?.id) {
+      notify('error', 'Không thể đổi quyền của chính mình.');
+      return;
+    }
+    const newRole = user.role === 'ADMIN' ? 'USER' : 'ADMIN';
+    if (!window.confirm(`Đổi quyền của "${user.username}" thành ${newRole}?`)) return;
+    try {
+      await LearningService.updateUserRole(user.id, newRole);
+      await refreshSummary();
+      notify('success', `Đã cấp quyền ${newRole} cho người dùng.`);
+    } catch (error) {
+      console.error(error);
+      notify('error', 'Không đổi được quyền người dùng.');
+    }
+  };
+
+  const pushBroadcast = async () => {
+    if (!broadcastMessage.trim()) {
+      notify('error', 'Nội dung thông báo không được trống.');
+      return;
+    }
+    try {
+      await LearningService.pushNotificationToAll(broadcastMessage);
+      notify('success', 'Đã gửi thông báo tới tất cả người dùng.');
+      setBroadcastMessage('');
+    } catch (error) {
+      console.error(error);
+      notify('error', 'Gửi thông báo thất bại.');
+    }
+  };
+
   const selectedCourse = courses.find((course) => course.id === selectedCourseId);
   const selectedDeck = decks.find((deck) => deck.id === selectedDeckId);
 
@@ -332,6 +367,7 @@ export default function AdminPanel() {
             <Tab label="Khóa học" />
             <Tab label="Flashcard" />
             <Tab label="Người dùng" />
+            <Tab label="Thông báo" />
           </Tabs>
 
           {tab === 0 && (
@@ -556,7 +592,10 @@ export default function AdminPanel() {
                       </TableCell>
                       <TableCell>{user.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN') : '-'}</TableCell>
                       <TableCell align="right">
-                        <IconButton color="error" disabled={user.id === currentUser?.id} onClick={() => deleteUser(user)}>
+                        <IconButton color="warning" disabled={user.id === currentUser?.id} onClick={() => changeRole(user)} title="Đổi vai trò">
+                          <SwapHorizIcon />
+                        </IconButton>
+                        <IconButton color="error" disabled={user.id === currentUser?.id} onClick={() => deleteUser(user)} title="Xóa người dùng">
                           <DeleteIcon />
                         </IconButton>
                       </TableCell>
@@ -565,6 +604,55 @@ export default function AdminPanel() {
                 </TableBody>
               </Table>
             </TableContainer>
+          )}
+
+          {tab === 4 && (
+            <Card sx={{ p: 3, borderRadius: 1, maxWidth: 600 }}>
+              <Typography variant="h5" sx={{ fontWeight: 800, mb: 1 }}>
+                Gửi thông báo (Broadcast)
+              </Typography>
+              <Typography color="text.secondary" sx={{ mb: 3 }}>
+                Gửi thông báo tới toàn bộ người dùng trong hệ thống ngay lập tức.
+              </Typography>
+              <Stack spacing={3}>
+                <TextField 
+                  label="Nội dung thông báo" 
+                  value={broadcastMessage}
+                  onChange={(e) => setBroadcastMessage(e.target.value)}
+                  multiline
+                  minRows={4}
+                  fullWidth
+                />
+                
+                <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+                  <Typography variant="body2" sx={{ alignSelf: 'center', fontWeight: 800, mr: 1 }}>Mẫu nhanh:</Typography>
+                  <Chip 
+                    label="Nhắc nhở học tập" 
+                    onClick={() => setBroadcastMessage('Đã đến giờ học tập! Hãy vào ôn tập lại các Flashcard của bạn ngay nhé.')} 
+                    color="secondary"
+                    variant="outlined"
+                    sx={{ cursor: 'pointer' }}
+                  />
+                  <Chip 
+                    label="Chào mừng" 
+                    onClick={() => setBroadcastMessage('Chào mừng bạn đến với Smart Learning. Chúc bạn một ngày học tập hiệu quả!')} 
+                    color="secondary"
+                    variant="outlined"
+                    sx={{ cursor: 'pointer' }}
+                  />
+                </Stack>
+
+                <Button 
+                  startIcon={<NotificationsIcon />} 
+                  variant="contained" 
+                  color="secondary" 
+                  onClick={pushBroadcast}
+                  sx={{ borderRadius: 1, py: 1.5, fontWeight: 800 }}
+                >
+                  Gửi tới tất cả
+                </Button>
+              </Stack>
+            </Card>
           )}
         </Stack>
       </MotionBox>

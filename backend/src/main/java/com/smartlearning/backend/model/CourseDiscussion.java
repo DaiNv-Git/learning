@@ -1,25 +1,26 @@
-package com.smartlearning.backend.core.entity;
+package com.smartlearning.backend.model;
 
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "notifications")
+@Table(name = "course_discussions")
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
-public class Notification {
+public class CourseDiscussion {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "course_id")
+    private Course course;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
-    @Column(nullable = false, length = 500)
-    private String message;
-
-    @Column(nullable = false)
-    private boolean isRead = false;
+    @Column(columnDefinition = "TEXT", nullable = false)
+    private String content;
 
     private LocalDateTime createdAt;
 
