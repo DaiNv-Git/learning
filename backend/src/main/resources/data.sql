@@ -1,6 +1,8 @@
 -- Users (password is 'password' hashed)
 INSERT INTO users (username, password, email, full_name, role) VALUES ('admin', '$2a$10$r.M2gq92rLqG9i9F1qG0IuuJg9zH8R5l.9GZ8Hh200P0L8bU9k3Cq', 'admin@test.com', 'Admin User', 'ADMIN');
 INSERT INTO users (username, password, email, full_name, role) VALUES ('user1', '$2a$10$r.M2gq92rLqG9i9F1qG0IuuJg9zH8R5l.9GZ8Hh200P0L8bU9k3Cq', 'user1@test.com', 'Test User', 'USER');
+INSERT INTO users (username, password, email, full_name, role) VALUES ('myadmin', '$2a$10$r.M2gq92rLqG9i9F1qG0IuuJg9zH8R5l.9GZ8Hh200P0L8bU9k3Cq', 'myadmin@test.com', 'My Admin', 'ADMIN');
+INSERT INTO users (username, password, email, full_name, role) VALUES ('myuser', '$2a$10$r.M2gq92rLqG9i9F1qG0IuuJg9zH8R5l.9GZ8Hh200P0L8bU9k3Cq', 'myuser@test.com', 'My User', 'USER');
 
 -- Courses
 INSERT INTO courses (title, description, created_by) VALUES ('Java Fundamentals', 'Learn basic Java concepts', 1);
