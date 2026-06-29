@@ -1,4 +1,10 @@
-import { useState, useEffect } from 'react';
+import re
+
+with open('frontend/src/pages/Courses.tsx', 'r') as f:
+    content = f.read()
+
+# Imports
+imports = """import { useState, useEffect } from 'react';
 import { Box, Typography, Grid, Card, CardContent, CardMedia, Button, Skeleton, Chip, Stack } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -6,58 +12,12 @@ import LinkIcon from '@mui/icons-material/Link';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import DashboardLayout from '../layouts/DashboardLayout';
-import LearningService from '../services/learning.service';
-import type { Course, CourseResource } from '../types';
+import DashboardLayout from '../layouts/DashboardLayout';"""
+content = re.sub(r"import \{ useState.*?import DashboardLayout from '\.\./layouts/DashboardLayout';", imports, content, flags=re.DOTALL)
 
-export default function Courses() {
-  const navigate = useNavigate();
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [resourcesByCourse, setResourcesByCourse] = useState<Record<number, CourseResource[]>>({});
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadCourses() {
-      try {
-        const res = await LearningService.getCourses();
-        setCourses(res.data);
-        const resourceEntries = await Promise.all(
-          res.data.map(async (course) => {
-            const resourceResponse = await LearningService.getCourseResources(course.id);
-            return [course.id, resourceResponse.data] as const;
-          })
-        );
-        setResourcesByCourse(Object.fromEntries(resourceEntries));
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadCourses();
-  }, []);
-
-  return (
-    <DashboardLayout>
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <Typography variant="h3" sx={{ fontWeight: 900, mb: 4, background: 'linear-gradient(135deg, #b966fe 0%, #00e5ff 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'inline-block' }}>
-          Course Library
-        </Typography>
-        
-        {loading ? (
-          <Grid container spacing={4}>
-            {[1,2,3].map(i => (
-              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={i}>
-                <Skeleton variant="rectangular" height={280} sx={{ borderRadius: 6, bgcolor: 'rgba(255,255,255,0.03)' }} />
-              </Grid>
-            ))}
-          </Grid>
-        ) : (
-          <Grid container spacing={4}>
-            {courses.map((course, idx) => (
-              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={course.id}>
-                <motion.div whileHover={{ y: -6 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
-                  <Card sx={{ 
+# Card styles
+card_block = """                  <Card sx={{ 
                     height: '100%', 
                     display: 'flex', 
                     flexDirection: 'column',
@@ -232,13 +192,10 @@ export default function Courses() {
                         </Button>
                       </Stack>
                     </Box>
-                  </Card>
-                </motion.div>
-              </Grid>
-            ))}
-          </Grid>
-        )}
-      </motion.div>
-    </DashboardLayout>
-  );
-}
+                  </Card>"""
+content = re.sub(r"                  <Card sx=\{\{ \n                    height: '100%'.*?                  </Card>", card_block, content, flags=re.DOTALL)
+
+
+with open('frontend/src/pages/Courses.tsx', 'w') as f:
+    f.write(content)
+
