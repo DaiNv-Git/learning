@@ -27,11 +27,9 @@ import {
   Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import CampaignIcon from '@mui/icons-material/Campaign';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
-import LinkIcon from '@mui/icons-material/Link';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import QuizIcon from '@mui/icons-material/Quiz';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -41,14 +39,12 @@ import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../layouts/DashboardLayout';
 import authService from '../services/auth.service';
 import LearningService from '../services/learning.service';
-import type { AdminSummary, Announcement, Course, CourseResource, Deck, DifficultyLevel, Flashcard, UserRow } from '../types';
+import type { AdminSummary, Course, Deck, DifficultyLevel, Flashcard, UserRow } from '../types';
 
 const MotionBox = motion.create(Box);
 
 const emptyCourse = { title: '', description: '' };
 const emptyDeck = { title: '', description: '' };
-const emptyResource = { title: '', url: '', type: 'DOC', description: '' };
-const emptyAnnouncement = { title: '', content: '', audience: 'ALL', active: true };
 const emptyCard: { frontText: string; backText: string; difficultyLevel: DifficultyLevel } = {
   frontText: '',
   backText: '',

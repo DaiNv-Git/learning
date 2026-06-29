@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import FlashcardStudy from './pages/FlashcardStudy';
 import Quiz from './pages/Quiz';
 import Courses from './pages/Courses';
+import CourseDetail from './pages/CourseDetail';
 import Profile from './pages/Profile';
 import AdminPanel from './pages/AdminPanel';
 
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/courses" element={<Courses />} />
+          <Route path="/courses/:id" element={<CourseDetail />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/admin" element={<AdminPanel />} />
           <Route path="/study/:courseId" element={<FlashcardStudy />} />

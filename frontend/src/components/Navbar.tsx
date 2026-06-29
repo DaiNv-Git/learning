@@ -1,6 +1,6 @@
-import { AppBar, Toolbar, Typography, Box, Button, Avatar, IconButton } from '@mui/material';
-import NotificationsIcon from '@mui/icons-material/Notifications';
+import { AppBar, Toolbar, Typography, Box, Button, Avatar } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import NotificationBell from './NotificationBell';
 import AuthService from '../services/auth.service';
 
 export default function Navbar() {
@@ -30,15 +30,7 @@ export default function Navbar() {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-          <IconButton sx={{ 
-            color: 'text.secondary', 
-            background: 'rgba(255,255,255,0.05)', 
-            border: '1px solid rgba(255,255,255,0.1)',
-            transition: 'all 0.3s ease',
-            '&:hover': { background: 'rgba(255,255,255,0.1)', color: 'primary.main', transform: 'translateY(-2px)' }
-          }}>
-            <NotificationsIcon />
-          </IconButton>
+          <NotificationBell />
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, background: 'rgba(255,255,255,0.03)', p: 1, pr: 2, borderRadius: 50, border: '1px solid rgba(255,255,255,0.05)' }}>
             <Avatar sx={{ 
               background: 'linear-gradient(135deg, #b966fe 0%, #00e5ff 100%)', 
