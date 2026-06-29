@@ -112,7 +112,16 @@ export default function Profile() {
                             />
                           </TableCell>
                           <TableCell sx={{ color: 'text.secondary', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                            {new Date(attempt.completedAt).toLocaleDateString()}
+                            {(() => {
+                              let date;
+                              if (Array.isArray(attempt.completedAt)) {
+                                const [year, month, day, hour = 0, minute = 0, second = 0] = attempt.completedAt;
+                                date = new Date(year, month - 1, day, hour, minute, second);
+                              } else {
+                                date = new Date(attempt.completedAt);
+                              }
+                              return date.toLocaleDateString();
+                            })()}
                           </TableCell>
                         </TableRow>
                       );

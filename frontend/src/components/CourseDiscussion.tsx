@@ -94,7 +94,16 @@ export default function CourseDiscussion({ courseId }: { courseId: string }) {
                 <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
                   {disc.user.fullName || disc.user.username} 
                   <span style={{ marginLeft: 8, color: 'gray', fontWeight: 'normal', fontSize: '0.8rem' }}>
-                    {new Date(disc.createdAt).toLocaleString()}
+                    {(() => {
+                      let date;
+                      if (Array.isArray(disc.createdAt)) {
+                        const [year, month, day, hour = 0, minute = 0, second = 0] = disc.createdAt;
+                        date = new Date(year, month - 1, day, hour, minute, second);
+                      } else {
+                        date = new Date(disc.createdAt);
+                      }
+                      return date.toLocaleString();
+                    })()}
                   </span>
                 </Typography>
                 {currentUser?.role === 'ADMIN' && (

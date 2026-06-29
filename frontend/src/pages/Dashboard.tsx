@@ -59,7 +59,13 @@ export default function Dashboard() {
         .reverse()
         .slice(-5)
         .map(a => {
-          const date = new Date(a.completedAt);
+          let date;
+          if (Array.isArray(a.completedAt)) {
+            const [year, month, day, hour = 0, minute = 0, second = 0] = a.completedAt;
+            date = new Date(year, month - 1, day, hour, minute, second);
+          } else {
+            date = new Date(a.completedAt);
+          }
           return {
             name: `${date.getDate()}/${date.getMonth() + 1}`,
             score: Math.round((a.score / a.totalQuestions) * 100) || 0

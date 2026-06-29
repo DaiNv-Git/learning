@@ -101,7 +101,17 @@ export default function NotificationBell() {
                   primary={n.message} 
                   secondary={
                     <Typography component="span" sx={{ color: 'gray', fontSize: '0.8rem' }}>
-                      {new Date(n.createdAt).toLocaleString()}
+                      {(() => {
+                        if (!n.createdAt) return '';
+                        let date;
+                        if (Array.isArray(n.createdAt)) {
+                          const [year, month, day, hour = 0, minute = 0, second = 0] = n.createdAt;
+                          date = new Date(year, month - 1, day, hour, minute, second);
+                        } else {
+                          date = new Date(n.createdAt);
+                        }
+                        return date.toLocaleString();
+                      })()}
                     </Typography>
                   } 
                 />

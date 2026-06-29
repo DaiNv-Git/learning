@@ -590,7 +590,19 @@ export default function AdminPanel() {
                       <TableCell>
                         <Chip size="small" label={user.role} color={user.role === 'ADMIN' ? 'secondary' : 'default'} />
                       </TableCell>
-                      <TableCell>{user.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN') : '-'}</TableCell>
+                      <TableCell>
+                        {(() => {
+                          if (!user.createdAt) return '-';
+                          let date;
+                          if (Array.isArray(user.createdAt)) {
+                            const [year, month, day, hour = 0, minute = 0, second = 0] = user.createdAt;
+                            date = new Date(year, month - 1, day, hour, minute, second);
+                          } else {
+                            date = new Date(user.createdAt);
+                          }
+                          return date.toLocaleDateString('vi-VN');
+                        })()}
+                      </TableCell>
                       <TableCell align="right">
                         <IconButton color="warning" disabled={user.id === currentUser?.id} onClick={() => changeRole(user)} title="Đổi vai trò">
                           <SwapHorizIcon />
